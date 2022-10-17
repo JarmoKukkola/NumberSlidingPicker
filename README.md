@@ -6,19 +6,8 @@ Progress value can be changed using the up and down arrows, click and edit the e
 
 ![Screen shot](./art/video.gif)
 
-[![Build Status](https://travis-ci.org/sephiroth74/NumberSlidingPicker.svg?branch=master)](https://travis-ci.org/sephiroth74/NumberSlidingPicker)
-
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/it.sephiroth.android.library/number-sliding-picker/badge.svg)](https://maven-badges.herokuapp.com/maven-central/it.sephiroth.android.library/number-sliding-picker)
-[![](https://jitpack.io/v/sephiroth74/NumberSlidingPicker.svg)](https://jitpack.io/#sephiroth74/NumberSlidingPicker)
-
 Installation
 ===
-
-## Maven
-
-```gradle
-compile 'it.sephiroth.android.library:number-sliding-picker:**version**'
-```	
 	
 ## JitPack
 
@@ -37,11 +26,9 @@ allprojects {
 
 ```gradle
 dependencies {
-        implementation 'com.github.sephiroth74:NumberSlidingPicker:Tag'
+        implementation 'com.github.JarmoKukkola:NumberSlidingPicker:Tag'
 }
 ```
-
-Get the latest version  on [JitPack](https://jitpack.io/#sephiroth74/NumberSlidingPicker)	
 
 
 Usage
@@ -84,7 +71,7 @@ License
 ===
 MIT License
 
-Copyright (c) 2019 Alessandro Crugnola
+Copyright (c) 2019 Alessandro Crugnola, 2022 Jarmo Kukkola
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

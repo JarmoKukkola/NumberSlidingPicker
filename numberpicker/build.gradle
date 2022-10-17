@@ -1,14 +1,13 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'maven-publish'
 apply plugin: 'kotlin-kapt'
-
-
-group GROUP
-version VERSION_NAME
 
 android {
     compileSdkVersion 33
+
+    namespace = "it.sephiroth.android.library.numberpicker"
 
     defaultConfig {
         minSdkVersion 21
@@ -35,20 +34,38 @@ android {
         abortOnError false
         disable 'PrivateResource'
     }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+
+                groupId = 'com.github.JarmoKukkola'
+                artifactId = 'NumberSlidingPicker'
+                version = '1.0.0'
+            }
+        }
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'com.github.sephiroth74:android-target-tooltip:v2.0.4'
     implementation 'com.github.sephiroth74:AndroidUIGestureRecognizer:v1.2.7'
+    implementation 'com.github.sephiroth74:android-target-tooltip:v2.0.4'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'androidx.core:core-ktx:1.9.0'
 
-    implementation 'com.jakewharton.timber:timber:5.0.1'
     implementation 'com.google.android.material:material:1.6.1'
 
     testImplementation "androidx.test.ext:junit:1.1.3"
