@@ -7,6 +7,7 @@ import android.graphics.PointF
 import android.os.Handler
 import android.util.AttributeSet
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -54,6 +55,7 @@ class NumberPicker @JvmOverloads constructor(
     private lateinit var longGesture:UILongPressGestureRecognizer
     private lateinit var tapGesture:UITapGestureRecognizer
     private var disableGestures:Boolean = false
+    private var disableTooltip:Boolean = false
 
     private var tooltip:Tooltip? = null
     private var maxDistance:Int
@@ -90,10 +92,12 @@ class NumberPicker @JvmOverloads constructor(
                 }
                 val final2 = sin((diff/tracker.minDistance)*Math.PI/2).toFloat()
 
-                tooltip?.let {tooltip->
-                    when(data.orientation) {
-                        VERTICAL->tooltip.offsetTo(tooltip.offsetX,final2/2*tracker.minDistance)
-                        HORIZONTAL->tooltip.offsetTo(final2/2*tracker.minDistance,tooltip.offsetY)
+                if(!disableTooltip) {
+                    tooltip?.let {tooltip->
+                        when(data.orientation) {
+                            VERTICAL->tooltip.offsetTo(tooltip.offsetX,final2/2*tracker.minDistance)
+                            HORIZONTAL->tooltip.offsetTo(final2/2*tracker.minDistance,tooltip.offsetY)
+                        }
                     }
                 }
 
@@ -111,7 +115,9 @@ class NumberPicker @JvmOverloads constructor(
     fun setProgress(value:Int,fromUser:Boolean = true) { // Timber.i("setProgress($value, $fromUser)")
         if(value!=data.value) {
             data.value = value
-            tooltip?.update(data.value.toString())
+            if(!disableTooltip) {
+                tooltip?.update(data.value.toString())
+            }
 
             if(editText.text.toString()!=data.value.toString()) editText.setText(data.value.toString())
 
@@ -162,6 +168,7 @@ class NumberPicker @JvmOverloads constructor(
             background = array.getDrawable(R.styleable.NumberPicker_android_background)
             editTextStyleId = array.getResourceId(R.styleable.NumberPicker_picker_editTextStyle,R.style.NumberPicker_EditTextStyle)
             tooltipStyleId = array.getResourceId(R.styleable.NumberPicker_picker_tooltipStyle,R.style.NumberPicker_ToolTipStyle)
+            disableTooltip = array.getBoolean(R.styleable.NumberPicker_picker_disableTooltip,false)
             disableGestures = array.getBoolean(R.styleable.NumberPicker_picker_disableGestures,false)
             maxDistance = context.resources.getDimensionPixelSize(R.dimen.picker_distance_max)
 
@@ -256,7 +263,7 @@ class NumberPicker @JvmOverloads constructor(
                         upButton.isPressed = true
 
                         GlobalScope.launch(Dispatchers.Main) {
-                            repeating=true
+                            repeating = true
                             delay(ARROW_BUTTON_INITIAL_DELAY)
                             while(repeating) {
                                 setProgress(progress+stepSize)
@@ -291,7 +298,7 @@ class NumberPicker @JvmOverloads constructor(
                         downButton.isPressed = true
 
                         GlobalScope.launch(Dispatchers.Main) {
-                            repeating=true
+                            repeating = true
                             delay(ARROW_BUTTON_INITIAL_DELAY)
                             while(repeating) {
                                 setProgress(progress-stepSize)
@@ -332,19 +339,15 @@ class NumberPicker @JvmOverloads constructor(
             }
         }
 
-        editText.setOnEditorActionListener {_,actionId,_->
-            when(actionId) {
-                EditorInfo.IME_ACTION_DONE-> {
-                    editText.clearFocus()
-                    (context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).apply {
-                        hideSoftInputFromWindow(
-                            this@NumberPicker.windowToken,0
-                        )
-                    }
-                    true
+        editText.setOnEditorActionListener {_,actionId,event->
+            if(actionId==EditorInfo.IME_ACTION_DONE || event?.keyCode==KeyEvent.KEYCODE_ENTER) {
+                (context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).apply {
+                    hideSoftInputFromWindow(
+                        this@NumberPicker.windowToken,0
+                    )
                 }
-                else->false
-            }
+                true
+            } else false
         }
     }
 
@@ -378,22 +381,25 @@ class NumberPicker @JvmOverloads constructor(
     private fun startInteraction() {
         animate().alpha(0.5f).start()
 
-        tooltip =
-            Tooltip.Builder(context).anchor(editText,0,0,false).styleId(tooltipStyleId).arrow(true).closePolicy(ClosePolicy.TOUCH_NONE).overlay(false)
-                .showDuration(0).text(if(minValue.toString().length>maxValue.toString().length) minValue.toString() else maxValue.toString())
+        if(!disableTooltip) {
+
+            tooltip = Tooltip.Builder(context).anchor(editText,0,0,false).styleId(tooltipStyleId).arrow(true).closePolicy(ClosePolicy.TOUCH_NONE)
+                .overlay(false).showDuration(0)
+                .text(if(minValue.toString().length>maxValue.toString().length) minValue.toString() else maxValue.toString())
                 .animationStyle(if(orientation==VERTICAL) R.style.NumberPicker_AnimationVertical else R.style.NumberPicker_AnimationHorizontal)
                 .create()
 
-        tooltip?.doOnPrepare {tooltip->
-            tooltip.contentView?.let {contentView->
-                val textView = contentView.findViewById<TextView>(android.R.id.text1)
-                textView.measure(0,0)
-                textView.minWidth = textView.measuredWidth
+            tooltip?.doOnPrepare {tooltip->
+                tooltip.contentView?.let {contentView->
+                    val textView = contentView.findViewById<TextView>(android.R.id.text1)
+                    textView.measure(0,0)
+                    textView.minWidth = textView.measuredWidth
+                }
             }
-        }
 
-        tooltip?.doOnShown {it.update(data.value.toString())}
-        tooltip?.show(this,if(data.orientation==VERTICAL) Tooltip.Gravity.LEFT else Tooltip.Gravity.TOP,false)
+            tooltip?.doOnShown {it.update(data.value.toString())}
+            tooltip?.show(this,if(data.orientation==VERTICAL) Tooltip.Gravity.LEFT else Tooltip.Gravity.TOP,false)
+        }
 
         numberPickerChangeListener?.onStartTrackingTouch(this)
 
@@ -404,8 +410,10 @@ class NumberPicker @JvmOverloads constructor(
 
         animate().alpha(1.0f).start()
 
-        tooltip?.dismiss()
-        tooltip = null
+        if(!disableTooltip) {
+            tooltip?.dismiss()
+            tooltip = null
+        }
 
         numberPickerChangeListener?.onStopTrackingTouch(this)
     }
@@ -416,7 +424,7 @@ class NumberPicker @JvmOverloads constructor(
         const val TRACKER_EXPONENTIAL = 1
 
         const val ARROW_BUTTON_INITIAL_DELAY = 800L
-        const val ARROW_BUTTON_FRAME_DELAY = 16L
+        const val ARROW_BUTTON_FRAME_DELAY = 100L
         const val LONG_TAP_TIMEOUT = 300L
 
         val FOCUSED_STATE_ARRAY = intArrayOf(android.R.attr.state_focused)

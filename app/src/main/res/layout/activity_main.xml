@@ -38,6 +38,7 @@
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:picker_max="@{model.maxValue}"
+            app:picker_disableTooltip="true"
             app:picker_min="@{model.minValue}" />
 
         <TextView
