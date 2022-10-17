@@ -16,15 +16,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatImageButton
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 import it.sephiroth.android.library.uigestures.*
 import it.sephiroth.android.library.xtooltip.ClosePolicy
 import it.sephiroth.android.library.xtooltip.Tooltip
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -64,8 +63,6 @@ class NumberPicker @JvmOverloads constructor(
     private var callback = {newValue:Int->
         setProgress(newValue)
     }
-
-    private var buttonInterval:Disposable? = null
 
     private val longGestureListener = {it:UIGestureRecognizer->
         Timber.i("longGestureListener = ${it.state}")
@@ -239,6 +236,8 @@ class NumberPicker @JvmOverloads constructor(
         addView(upButton,params1)
     }
 
+    var repeating = false
+
     @SuppressLint("ClickableViewAccessibility")
     private fun initializeButtonActions() {
         upButton.setOnTouchListener {_,event->
@@ -255,19 +254,20 @@ class NumberPicker @JvmOverloads constructor(
 
                         upButton.requestFocus()
                         upButton.isPressed = true
-                        buttonInterval?.dispose()
 
-                        buttonInterval = Observable.interval(
-                            ARROW_BUTTON_INITIAL_DELAY,ARROW_BUTTON_FRAME_DELAY,TimeUnit.MILLISECONDS,Schedulers.io()
-                        ).observeOn(AndroidSchedulers.mainThread()).subscribe {
+                        GlobalScope.launch(Dispatchers.Main) {
+                            repeating=true
+                            delay(ARROW_BUTTON_INITIAL_DELAY)
+                            while(repeating) {
                                 setProgress(progress+stepSize)
+                                delay(ARROW_BUTTON_FRAME_DELAY)
                             }
+                        }
                     }
 
                     MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL-> {
+                        repeating = false
                         upButton.isPressed = false
-                        buttonInterval?.dispose()
-                        buttonInterval = null
                     }
                 }
 
@@ -289,21 +289,20 @@ class NumberPicker @JvmOverloads constructor(
 
                         downButton.requestFocus()
                         downButton.isPressed = true
-                        buttonInterval?.dispose()
 
-                        buttonInterval = Observable.interval(
-                            ARROW_BUTTON_INITIAL_DELAY,ARROW_BUTTON_FRAME_DELAY,TimeUnit.MILLISECONDS,Schedulers.io()
-                        ).observeOn(AndroidSchedulers.mainThread()).subscribe {
+                        GlobalScope.launch(Dispatchers.Main) {
+                            repeating=true
+                            delay(ARROW_BUTTON_INITIAL_DELAY)
+                            while(repeating) {
                                 setProgress(progress-stepSize)
+                                delay(ARROW_BUTTON_FRAME_DELAY)
                             }
+                        }
                     }
 
                     MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL-> {
+                        repeating = false
                         downButton.isPressed = false
-
-                        buttonInterval?.dispose()
-                        buttonInterval = null
-
                     }
                 }
 
