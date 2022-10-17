@@ -68,8 +68,8 @@ class NumberPicker @JvmOverloads constructor(
 
     private val longGestureListener = {it:UIGestureRecognizer->
         Timber.i("longGestureListener = ${it.state}")
-        when {
-            it.state==UIGestureRecognizer.State.Began-> {
+        when(it.state) {
+            UIGestureRecognizer.State.Began-> {
                 requestFocus()
                 editText.isSelected = false
                 editText.clearFocus()
@@ -78,12 +78,7 @@ class NumberPicker @JvmOverloads constructor(
                 startInteraction()
             }
 
-            it.state==UIGestureRecognizer.State.Ended-> {
-                tracker.end()
-                endInteraction()
-            }
-
-            it.state==UIGestureRecognizer.State.Changed-> {
+            UIGestureRecognizer.State.Changed-> {
                 var diff = if(data.orientation==VERTICAL) it.currentLocationY-it.downLocationY else it.currentLocationX-it.downLocationX
                 if(diff>tracker.minDistance) {
                     diff = tracker.minDistance
@@ -102,6 +97,11 @@ class NumberPicker @JvmOverloads constructor(
                 }
 
                 tracker.addMovement(it.currentLocationX,it.currentLocationY)
+            }
+
+            else-> {
+                tracker.end()
+                endInteraction()
             }
         }
     }
