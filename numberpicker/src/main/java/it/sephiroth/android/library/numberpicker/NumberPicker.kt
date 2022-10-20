@@ -17,6 +17,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatImageButton
+import androidx.core.widget.doOnTextChanged
 import it.sephiroth.android.library.uigestures.*
 import it.sephiroth.android.library.xtooltip.ClosePolicy
 import it.sephiroth.android.library.xtooltip.Tooltip
@@ -317,30 +318,25 @@ class NumberPicker @JvmOverloads constructor(
             }
         }
 
-        //        editText.doOnTextChanged { text, _, _, _ ->
-        //            if (!text.isNullOrEmpty()) {
-        //                try {
-        //                    this.setProgress(Integer.valueOf(text.toString()))
-        //                } catch (e: NumberFormatException) {
-        //                    Timber.e(e)
+        editText.doOnTextChanged { _, _, _, _ ->
+                setProgress()
+        }
+
+        //        editText.setOnFocusChangeListener {_,hasFocus->
+        //            setBackgroundFocused(hasFocus)
+        //
+        //            if(!hasFocus) {
+        //                if(!editText.text.isNullOrEmpty()) {
+        //                    setProgress(Integer.valueOf(editText.text.toString()),true)
+        //                } else {
+        //                    editText.setText(data.value.toString())
         //                }
         //            }
         //        }
 
-        editText.setOnFocusChangeListener {_,hasFocus->
-            setBackgroundFocused(hasFocus)
-
-            if(!hasFocus) {
-                if(!editText.text.isNullOrEmpty()) {
-                    setProgress(Integer.valueOf(editText.text.toString()),true)
-                } else {
-                    editText.setText(data.value.toString())
-                }
-            }
-        }
-
         editText.setOnEditorActionListener {_,actionId,event->
             if(actionId==EditorInfo.IME_ACTION_DONE || event?.keyCode==KeyEvent.KEYCODE_ENTER) {
+                setProgress()
                 (context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).apply {
                     hideSoftInputFromWindow(
                         this@NumberPicker.windowToken,0
@@ -349,6 +345,15 @@ class NumberPicker @JvmOverloads constructor(
                 true
             } else false
         }
+    }
+
+    private fun setProgress() {
+        val value:Int = try{
+            Integer.valueOf(editText.text.toString())
+        }catch(e:Exception){
+            minValue
+        }
+        setProgress(value,true)
     }
 
     private fun setBackgroundFocused(hasFocus:Boolean) {
